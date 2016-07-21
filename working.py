@@ -1,3 +1,4 @@
+import datetime
 from time import sleep
 from random import randint
 
@@ -16,6 +17,8 @@ working_thread=None
 gmaps = googlemaps.Client(key=GOOGLEMAPS_KEY)
 rest_time=1
 pokemon_list=json.load(open('pokemon.json'))
+
+chain_hack_timeout = datetime.datetime(year=1970, month=1, day=1)
 
 def work_on_cell(cell,api,position,config):
 	#print cell
@@ -45,15 +48,15 @@ def work_on_cell(cell,api,position,config):
 			time.sleep(2)
 			"""
 
-	if config.spinstop and randint(1,3) == 1:  # every 3rd time
+	if config.spinstop and chain_hack_timeout < datetime.datetime.now():
 		if 'forts' in cell:
 			for fort in cell['forts']:
 				if 'type' in fort:
 					print('This is PokeStop')
 					hack_chain=search_seen_fort(fort,api,position,config)
 					if hack_chain > 10:
-						print('need a rest (sleeping 15)')
-						sleep(15)
+						print('need a rest (sleeping 60s)')
+						chain_hack_timeout = datetime.datetime.now() + datetime.timedelta(seconds=60)
 						break
 				else:
 					print('This is Gym')
