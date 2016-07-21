@@ -50,8 +50,10 @@ def work_on_cell(cell,api,position,config):
 			time.sleep(2)
 			"""
 
-	if config.spinstop and chain_hack_timeout < datetime.datetime.now():
-		if 'forts' in cell:
+	if config.spinstop:
+		if chain_hack_timeout > datetime.datetime.now():
+			print 'waiting till timeout for spin stop'
+		elif 'forts' in cell:
 			for fort in cell['forts']:
 				if 'type' in fort:
 					#print('This is PokeStop')
