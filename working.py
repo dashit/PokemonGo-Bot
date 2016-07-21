@@ -55,7 +55,10 @@ def work_on_cell(cell,api,position,config):
 			for fort in cell['forts']:
 				if 'type' in fort:
 					#print('This is PokeStop')
-					hack_chain=search_seen_fort(fort,api,position,config)
+					try:
+						hack_chain=search_seen_fort(fort,api,position,config)
+					except:
+						hack_chain = None
 					if hack_chain > 10:
 						print('need a rest (sleeping 60s)')
 						chain_hack_timeout = datetime.datetime.now() + datetime.timedelta(seconds=60)
