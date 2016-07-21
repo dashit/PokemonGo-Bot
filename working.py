@@ -191,22 +191,22 @@ def search_seen_fort(fort,api,position,config):
 
 		spin_details = response_dict['responses']['FORT_SEARCH']
 		
-		if spin_details['result'] is 1:
+		if spin_details.get('result') is 1:
 			print("- Loot: ")
-			print("- " + str(spin_details['experience_awarded']) + " xp")
-			for item in spin_details['items_awarded']:
-				item_id = str(item['item_id'])
+			print("- " + str(spin_details.get('experience_awarded')) + " xp")
+			for item in spin_details.get('items_awarded'):
+				item_id = str(item.get('item_id'))
 				item_name = item_list[item_id]
-				print("- " + str(item['item_count']) + "x " + item_name)
+				print("- " + str(item.get('item_count')) + "x " + item_name)
 
 
-		if spin_details['result'] is 2:
+		if spin_details.get('result') is 2:
 			print("- Pokestop out of range")
 
-		if spin_details['result'] is 3:
+		if spin_details.get('result') is 3:
 			print("- Pokestop on cooldown")
 
-		if spin_details['result'] is 4:
+		if spin_details.get('result') is 4:
 			print("- Inventory is full!")
 
 		if 'chain_hack_sequence_number' in response_dict['responses']['FORT_SEARCH']:
