@@ -21,6 +21,7 @@ pokemon_list=json.load(open('pokemon.json'))
 chain_hack_timeout = datetime.datetime(year=1970, month=1, day=1)
 
 def work_on_cell(cell,api,position,config):
+	global chain_hack_timeout
 	#print cell
 	if 'catchable_pokemons' in cell:
 		print 'Something rustles nearby!'
