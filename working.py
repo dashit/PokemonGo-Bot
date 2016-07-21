@@ -100,7 +100,7 @@ def encount_and_catch_pokemon(pokemon,api,position,config):
 							print('A Wild ' + str(pokemon_name) + ' appeared! [CP' + str(cp) + ']')
 					while(True):
 						api.catch_pokemon(encounter_id = encounter_id,
-							pokeball = 2 if cp > 250 else 1,
+							pokeball = 2 if cp >= config.switch_at_cp else 1,
 							normalized_reticle_size = 1.950,
 							spawn_point_guid = spawnpoint_id,
 							hit_pokemon = 1,

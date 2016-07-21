@@ -98,6 +98,7 @@ def init_config():
     parser.add_argument("-s", "--spinstop", help="SpinPokeStop",action='store_true')
     parser.add_argument("-w", "--walk", help="Walk instead of teleport with given speed (meters per second, e.g. 2.5)", type=float, default=0)
     parser.add_argument("-c", "--cp",help="Set CP less than to transfer(DEFAULT 100)",type=int,default=100)
+    parser.add_argument("-S", "--switch-at-cp",help="switch to better balls at CP (DEFAULT 180)",type=int,default=180)
     parser.add_argument("-d", "--debug", help="Debug Mode", action='store_true')
     parser.add_argument("-t", "--test", help="Only parse the specified location", action='store_true')
     parser.set_defaults(DEBUG=False, TEST=False)
