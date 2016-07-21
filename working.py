@@ -1,3 +1,5 @@
+from time import sleep
+from random import randint
 
 
 import googlemaps
@@ -43,14 +45,15 @@ def work_on_cell(cell,api,position,config):
 			time.sleep(2)
 			"""
 
-	if config.spinstop:
+	if config.spinstop and randint(1,3) == 1:  # every 3rd time
 		if 'forts' in cell:
 			for fort in cell['forts']:
 				if 'type' in fort:
 					print('This is PokeStop')
 					hack_chain=search_seen_fort(fort,api,position,config)
 					if hack_chain > 10:
-						print('need a rest')
+						print('need a rest (sleeping 15)')
+						sleep(15)
 						break
 				else:
 					print('This is Gym')
@@ -92,7 +95,7 @@ def encount_and_catch_pokemon(pokemon,api,position,config):
 							print('A Wild ' + str(pokemon_name) + ' appeared! [CP' + str(cp) + ']')
 					while(True):
 						api.catch_pokemon(encounter_id = encounter_id,
-							pokeball = 1,
+							pokeball = 2 if randint(1, 3) == 1 else 1,  # 1:3 probability to use better ball
 							normalized_reticle_size = 1.950,
 							spawn_point_guid = spawnpoint_id,
 							hit_pokemon = 1,
