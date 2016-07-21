@@ -194,7 +194,7 @@ def search_seen_fort(fort,api,position,config):
 		if spin_details.get('result') is 1:
 			print("- Loot: ")
 			print("- " + str(spin_details.get('experience_awarded')) + " xp")
-			for item in spin_details.get('items_awarded'):
+			for item in spin_details.get('items_awarded', []):
 				item_id = str(item.get('item_id'))
 				item_name = item_list[item_id]
 				print("- " + str(item.get('item_count')) + "x " + item_name)
