@@ -5,6 +5,160 @@ from sets import Set
 from utils import distance
 from pokemongo_bot.human_behaviour import sleep
 from pokemongo_bot import logger
+import operator
+from collections import defaultdict
+
+
+pokemon_name_to_family_id = {
+    'abra': 63,
+    'aerodactyl': 142,
+    'articuno': 144,
+    'bellsprout': 69,
+    'bulbasaur': 1,
+    'caterpie': 10,
+    'chansey': 113,
+    'charmander': 4,
+    'clefairy': 35,
+    'cubone': 104,
+    'diglett': 50,
+    'ditto': 132,
+    'doduo': 84,
+    'dratini': 147,
+    'drowzee': 96,
+    'eevee': 133,
+    'ekans': 23,
+    'electabuzz': 125,
+    'exeggcute': 102,
+    'farfetchd': 83,
+    'gastly': 92,
+    'geodude': 74,
+    'goldeen': 118,
+    'grimer': 88,
+    'growlithe': 58,
+    'hitmonchan': 107,
+    'hitmonlee': 106,
+    'horsea': 116,
+    'jigglypuff': 39,
+    'jynx': 124,
+    'kabuto': 140,
+    'kangaskhan': 115,
+    'koffing': 109,
+    'krabby': 98,
+    'lapras': 131,
+    'lickitung': 108,
+    'machop': 66,
+    'magikarp': 129,
+    'magmar': 126,
+    'magnemite': 81,
+    'mankey': 56,
+    'meowth': 52,
+    'mew': 151,
+    'mewtwo': 150,
+    'moltres': 146,
+    'mr_mime': 122,
+    'nidoran': 29,
+    'nidoran2': 32,
+    'oddish': 43,
+    'omanyte': 138,
+    'onix': 95,
+    'paras': 46,
+    'pidgey': 16,
+    'pikachu': 25,
+    'pinsir': 127,
+    'poliwag': 60,
+    'ponyta': 77,
+    'porygon': 137,
+    'psyduck': 54,
+    'rattata': 19,
+    'rhyhorn': 111,
+    'sandshrew': 27,
+    'scyther': 123,
+    'seel': 86,
+    'shellder': 90,
+    'slowpoke': 79,
+    'snorlax': 143,
+    'spearow': 21,
+    'squirtle': 7,
+    'staryu': 120,
+    'tangela': 114,
+    'tauros': 128,
+    'tentacool': 72,
+    'venonat': 48,
+    'voltorb': 100,
+    'vulpix': 37,
+    'weedle': 13,
+    'zapdos': 145,
+    'zubat': 41,
+}
+
+candies_to_evolve = {
+    'pidgey': 12,
+    'caterpie': 12,
+    'weedle': 12,
+    'rattata': 25,
+    'squirtle': 25,
+    'dratini': 25,
+    'spearow': 50,
+    'zubat': 50,
+    'drowzee' :50,
+    'venonat': 50,
+    'staryu': 50,
+    'sandshrew': 50,
+    'meowth': 50,
+    'psyduck': 50,
+    'slowpoke': 50,
+    'koffing': 50,
+    'krabby': 50,
+    'horsea': 50,
+    'goldeen': 50,
+    'shellder': 50,
+    'jigglypuff': 50,
+    'paras': 50,
+    'magnemite': 50,
+    'voltorb': 50,
+    'clefairy': 50,
+    'clefable': None,
+    'wigglytuff': None,
+
+    # switch me
+    'oddish': None, #25,
+    'gloom': 100,
+
+    'parasect': None,
+    'venomoth': 50,
+    'persian': 50,
+    'tentacool': 50,
+    'tentacruel': None,
+    'ponyta': 50,
+    'magneton': None,
+    'doduo': 50,
+    'seel': 50,
+    'kingler': None,
+    'exeggcute': 50,
+    'tangela': None,
+    'seaking': None,
+    'pinsir': None,
+
+    # switch me
+    'gastly': None, # 25
+    'haunter': 100,
+
+    'magikarp': 400,
+
+    'raticate': None,
+    'pidgeotto': 50,
+    'golbat': None,
+    'kakuna': None,
+    'metapod': None,
+    'fearow': None,
+    'pikachu': None,
+    'nidoran m': None,
+    'nidoran f': None,
+
+    'nidorina': None,
+    'poliwag': None,
+}
+
 
 class PokemonCatchWorker(object):
     BAG_FULL = 'bag_full'
@@ -19,6 +173,15 @@ class PokemonCatchWorker(object):
         self.pokemon_list = bot.pokemon_list
         self.item_list = bot.item_list
         self.inventory = bot.inventory
+
+        self.all_pokemon_list = {
+            int(each['Number']): each
+            for each in bot.pokemon_list
+        }
+        self.pokemon_name_to_id = {
+            each['Name'].lower(): int(each['Number'])
+            for each in bot.pokemon_list
+        }
 
     def work(self):
         encounter_id = self.pokemon['encounter_id']
@@ -143,34 +306,155 @@ class PokemonCatchWorker(object):
 
                                     id_list2 = self.count_pokemon_inventory()
 
-                                    if self.config.evolve_captured:
-                                        pokemon_to_transfer = list(Set(id_list2) - Set(id_list1))
-                                        self.api.evolve_pokemon(pokemon_id=pokemon_to_transfer[0])
-                                        response_dict = self.api.call()
-                                        status = response_dict['responses']['EVOLVE_POKEMON']['result']
-                                        if status == 1:
-                                            logger.log(
-                                                    '[#] {} has been evolved!'.format(pokemon_name), 'green')
-                                        else:
-                                            logger.log(
-                                            '[x] Failed to evolve {}!'.format(pokemon_name))
+                                    self.release_or_evolve(
+                                        pokemon_id=list(Set(id_list2) - Set(id_list1))[0],
+                                        cp=cp,
+                                        pokemon_name=pokemon_name,
+                                    )
 
-                                    if self.should_release_pokemon(pokemon_name, cp, pokemon_potential, response_dict):
-                                        # Transfering Pokemon
-                                        pokemon_to_transfer = list(
-                                            Set(id_list2) - Set(id_list1))
-                                        if len(pokemon_to_transfer) == 0:
-                                            raise RuntimeError(
-                                                'Trying to transfer 0 pokemons!')
-                                        self.transfer_pokemon(
-                                            pokemon_to_transfer[0])
-                                        logger.log(
-                                            '[#] {} has been exchanged for candy!'.format(pokemon_name), 'green')
-                                    else:
-                                        logger.log(
+                                    # if self.config.evolve_captured:
+                                    #     pokemon_to_transfer = list(Set(id_list2) - Set(id_list1))
+                                    #     self.api.evolve_pokemon(pokemon_id=pokemon_to_transfer[0])
+                                    #     response_dict = self.api.call()
+                                    #     status = response_dict['responses']['EVOLVE_POKEMON']['result']
+                                    #     if status == 1:
+                                    #         logger.log(
+                                    #                 '[#] {} has been evolved!'.format(pokemon_name), 'green')
+                                    #     else:
+                                    #         logger.log(
+                                    #         '[x] Failed to evolve {}!'.format(pokemon_name))
+                                    #
+                                    # if self.should_release_pokemon(pokemon_name, cp, pokemon_potential, response_dict):
+                                    #     # Transfering Pokemon
+                                    #     pokemon_to_transfer = list(
+                                    #         Set(id_list2) - Set(id_list1))
+                                    #     if len(pokemon_to_transfer) == 0:
+                                    #         raise RuntimeError(
+                                    #             'Trying to transfer 0 pokemons!')
+                                    #     self.transfer_pokemon(
+                                    #         pokemon_to_transfer[0])
+                                    #     logger.log(
+                                    #         '[#] {} has been exchanged for candy!'.format(pokemon_name), 'green')
+                                    logger.log(
                                         '[x] Captured {}! [CP {}]'.format(pokemon_name, cp), 'green')
                             break
         time.sleep(5)
+
+    def get_my_pokemon(self, inventory_response):
+        items = inventory_response['responses']['GET_INVENTORY']['inventory_delta']['inventory_items']
+        my_pokemon_list = []
+        for item in items:
+            if 'pokemon_data' in item['inventory_item_data']:
+                my_pokemon_list.append(item['inventory_item_data']['pokemon_data'])
+
+        pokemon_by_species = defaultdict(list)
+        for pokemon in my_pokemon_list:
+            if 'pokemon_id' in pokemon:
+                # not an egg
+                pokemon_by_species[pokemon['pokemon_id']].append(pokemon)
+
+        pokemon_by_species2 = {}
+        for species, pokemons in pokemon_by_species.items():
+            pokemon_by_species2[species] = sorted(
+                pokemons, key=operator.itemgetter('cp'), reverse=True,
+            )
+
+        return pokemon_by_species2
+
+    def get_candies(self, inventory_response):
+        items = inventory_response['responses']['GET_INVENTORY']['inventory_delta']['inventory_items']
+        candy_by_family = {}
+        for item in items:
+            if 'pokemon_family' in item['inventory_item_data']:
+                item2 = item['inventory_item_data']['pokemon_family']
+                candy_by_family[item2['family_id']] = item2['candy']
+
+        return candy_by_family
+
+    def release_or_evolve(self, pokemon_id, pokemon_name, cp):
+        pokemon_name = pokemon_name.lower()
+
+        self.api.get_inventory()
+        response = self.api.call()
+
+        candy_by_family = self.get_candies(response)
+        my_pokemon = self.get_my_pokemon(response)
+
+        candies_needed_for_evolve = candies_to_evolve.get(pokemon_name)
+        if not candies_needed_for_evolve:
+            print 'NO CANDY INFORMATION FOUND FOR {}'.format(pokemon_name)
+            return
+        family_id = pokemon_name_to_family_id.get(pokemon_name)
+        if not family_id:
+            print 'NO FAMILY FOUND FOR {}'.format(pokemon_name)
+            return
+        candies_available = candy_by_family.get(family_id)
+
+        pokemons_in_species = my_pokemon.get(family_id)
+
+        if candies_available is None:
+            amount_of_upgrades = 0
+        else:
+            amount_of_upgrades = int(candies_available / candies_needed_for_evolve)
+
+        iteration = 0
+        for pokemon in pokemons_in_species:
+            pokemon_id = pokemon['id']
+
+            if iteration < amount_of_upgrades:
+                print '  evolving {}'.format(pokemon_id)
+                self.api.evolve_pokemon(pokemon_id=pokemon_id)
+                self.api.call()
+                sleep(20)
+            elif iteration == amount_of_upgrades:
+                print '  keeping {}'.format(pokemon_id)
+            else:
+                print '  releasing {}'.format(pokemon_id)
+                self.api.release_pokemon(pokemon_id=pokemon_id)
+                self.api.call()
+                sleep(1)
+            iteration += 1
+
+        # for pokemon_name, candy_for_upgrade in candies_to_evolve.items():
+        #     print 'handling {} ({} candies)'.format(pokemon_name, candy_for_upgrade)
+        #     pokemon_id = pokemon_name_to_id[pokemon_name]
+        #     pokemons = pokemon_by_species.get(pokemon_id)
+        #     if not pokemons:
+        #         print('  did not find pokemon {} (#{}) in inventory'.format(
+        #             pokemon_name, pokemon_id))
+        #         continue
+        #     current_candy = candy_by_family.get(pokemon_id, None)
+        #
+        #     if current_candy is None or candy_for_upgrade is None:
+        #         amount_of_upgrades = 0
+        #         print('  not doing upgrades on {}'.format(pokemon_name))
+        #     else:
+        #         amount_of_upgrades = int(current_candy / candy_for_upgrade)
+        #         if amount_of_upgrades > 0:
+        #             print(
+        #             '  can do {} upgrades for {}'.format(amount_of_upgrades,
+        #                                                  pokemon_name))
+        #         else:
+        #             print('  cannot do  upgrades on {}'.format(pokemon_name))
+        #
+        #     iteration = 0
+        #     for pokemon in pokemons:
+        #         pokemon_id = pokemon['id']
+        #
+        #         if iteration < amount_of_upgrades:
+        #             print '  evolving {}'.format(pokemon_id)
+        #             api.evolve_pokemon(pokemon_id=pokemon_id)
+        #             api.call()
+        #             sleep(20)
+        #         elif iteration == amount_of_upgrades:
+        #             print '  keeping {}'.format(pokemon_id)
+        #         else:
+        #             print '  releasing {}'.format(pokemon_id)
+        #             api.release_pokemon(pokemon_id=pokemon_id)
+        #             api.call()
+        #             sleep(1)
+        #         iteration += 1
+
 
     def _transfer_low_cp_pokemon(self, value):
         self.api.get_inventory()
