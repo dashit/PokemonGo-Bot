@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from ._evolve_kim import KimEvolver
 
 import time
 from random import random
@@ -40,6 +41,9 @@ class PokemonCatchWorker(BaseTask):
         self.spawn_point_guid = ''
         self.response_key = ''
         self.response_status_key = ''
+
+        self.evolver = KimEvolver(self.bot)
+        self.evolver.release_or_evolve(initial=True)
 
     ############################################################################
     # public methods
@@ -100,6 +104,8 @@ class PokemonCatchWorker(BaseTask):
         encounter_id = self.pokemon['encounter_id']
         catch_rate_by_ball = [0] + response['capture_probability']['capture_probability']  # offset so item ids match indces
         self._do_catch(pokemon, encounter_id, catch_rate_by_ball, is_vip=is_vip)
+
+        self.evolver.release_or_evolve()
 
         # simulate app
         time.sleep(5)

@@ -470,6 +470,21 @@ class PokemonGoBot(object):
             parameters=('path', )
         )
 
+        self.event_manager.register_event(
+            'releasing_pokemon',
+            parameters=('pokemon', 'iv')
+        )
+
+        self.event_manager.register_event(
+            'evolving_pokemon',
+            parameters=('pokemon', 'iv')
+        )
+
+        self.event_manager.register_event(
+            'no_candy_info',
+            parameters=('pokemon',)
+        )
+
     def tick(self):
         self.health_record.heartbeat()
         self.cell = self.get_meta_cell()
